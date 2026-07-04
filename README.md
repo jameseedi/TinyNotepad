@@ -156,15 +156,20 @@ PNG-from-front, ZIP-from-back, HTML-ignores-the-binary — three parsers, one
 file. Verified: PNG decodes, ZIP CRCs pass, and Chromium runs the
 self-decode.
 
-### [`challenges/qr/`](challenges/qr) — two QRs, two takes
+### [`challenges/qr/`](challenges/qr) — a real program, in a QR, on any phone
 
-Two codes side by side. **`program.qr.png`** is a **vCard**: scan it with any
-phone camera and it offers to create a fully populated contact — offline, no
-app, works everywhere. **`life.qr.png`** puts a whole program *inside* the
-QR — a Conway's Game of Life as a `data:text/html` URL that runs on scan
-*where `data:` URLs are permitted* (desktop Firefox, some scanner webviews;
-stock mobile Chrome blocks it with `about:blank#blocked`, which is why the
-vCard exists too). Verified: `zbar` decodes both exactly, and Chromium runs
-the Game of Life (~1900 live cells, evolving).
+`fragment.qr.png` carries a whole **Conway's Game of Life inside the QR** and
+runs it on **any** phone. The move: encode an ordinary `https://` URL (which
+phones always open) with the entire program in the URL **`#fragment`** —
+which, by spec, the browser *never sends to the server*, so it stays on your
+device. A fixed ~30-line hosted stub (`run.html`, served from this repo via
+raw.githack) reads the fragment and writes it out as the page. No `data:`
+URL, so no `about:blank#blocked`; the program genuinely lives in the code you
+scan. This sidesteps exactly the mobile block that stops the pure
+`data:text/html` version (`life.qr.png`, kept for the fully-offline
+desktop/Firefox case). A vCard (`program.qr.png`) rounds out the set as the
+zero-caveat "acts on any phone" baseline. Verified: `run.html` serves from
+the CDN as byte-identical `text/html`, and running it with the QR's fragment
+evolves the Game of Life (~2000 live cells).
 
 Each challenge folder has its own README, a builder script, and a verifier.

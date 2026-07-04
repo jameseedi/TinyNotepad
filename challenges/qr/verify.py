@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Verify both QRs decode to exactly what their builders encoded — the same
-read a phone's decoder performs. program.qr.png must be the well-formed
-vCard; life.qr.png must be the byte-exact data: URL. Whether the phone then
-offers "Add Contact" (vCard) or runs the program (data: URL, browser-
-dependent) are behaviours we can't exercise headlessly. Exit non-zero on
-failure."""
-import os, subprocess, sys
+"""Verify all three QRs decode to exactly what their builders encoded — the
+same read a phone's decoder performs:
+  program.qr.png  -> the well-formed vCard
+  life.qr.png     -> the byte-exact data: URL program
+  fragment.qr.png -> the rawcdn runner URL with the program in the #fragment,
+                     which must decode back to the minified program
+Whether the phone then acts on each (Add Contact / run the program) is OS or
+browser behaviour we can't exercise headlessly. Exit non-zero on failure."""
+import os, re, subprocess, sys, urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ok = True
@@ -44,5 +46,27 @@ check("life QR round-trips byte-for-byte", life.rstrip("\n") == life_url.rstrip(
 check("life payload is a data:text/html program",
       life_url.startswith("data:text/html,") and "<script>" in life_url,
       "%d bytes" % len(life_url))
+
+
+# --- fragment.qr.png: program in the URL #fragment behind a hosted runner ---
+def minify(html):
+    html = re.sub(r"<!--.*?-->", "", html, flags=re.S)
+    html = re.sub(r"\s+", " ", html).strip()
+    html = re.sub(r"\s+(?=\W)", "", html)
+    html = re.sub(r"(?<=\W)\s+", "", html)
+    return html
+
+
+frag_url = scan("fragment.qr.png").rstrip("\n")
+saved = open(os.path.join(HERE, "fragment.url.txt"), encoding="utf-8").read()
+check("fragment QR round-trips byte-for-byte", frag_url == saved.rstrip("\n"))
+check("points at the https rawcdn runner (no data: URL, so no mobile block)",
+      frag_url.startswith("https://rawcdn.githack.com/") and "/run.html#" in frag_url)
+program_in_frag = urllib.parse.unquote(frag_url.split("#", 1)[1])
+program = minify(open(os.path.join(HERE, "life.html"), encoding="utf-8").read())
+check("fragment decodes back to the minified program", program_in_frag == program,
+      "%d program bytes carried in the QR" % len(program))
+print("fragment QR: %d URL bytes (%d in the fragment)"
+      % (len(frag_url), len(frag_url.split("#", 1)[1])))
 
 sys.exit(0 if ok else 1)
