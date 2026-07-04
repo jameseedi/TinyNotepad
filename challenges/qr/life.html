@@ -1,0 +1,39 @@
+<!-- life.html — the program encoded inside program.qr.png.
+     Conway's Game of Life: a toroidal grid seeded at random, evolving live
+     on a full-screen canvas; tap/click reseeds. This readable copy is what
+     build_qr.py minifies into a data:text/html URL and turns into the QR.
+     Scanning the QR opens this program; no network, nothing to install. -->
+<canvas id=c></canvas>
+<style>
+  html,body{margin:0;background:rgb(4,10,6);overflow:hidden}
+  canvas{width:100vw;height:100vh;image-rendering:pixelated;display:block}
+</style>
+<script>
+  W = 120; H = 80;
+  x = c.getContext('2d');
+  c.width = W; c.height = H;
+  seed = () => Array(W * H).fill(0).map(() => Math.random() < 0.28 ? 1 : 0);
+  a = seed();
+  onclick = () => a = seed();
+  function step() {
+    b = Array(W * H);
+    for (y = 0; y < H; y++) for (X = 0; X < W; X++) {
+      n = 0;
+      for (j = -1; j < 2; j++) for (i = -1; i < 2; i++)
+        if (i | j) n += a[((y + j + H) % H) * W + (X + i + W) % W];
+      k = y * W + X;
+      b[k] = a[k] ? (n == 2 || n == 3 ? 1 : 0) : (n == 3 ? 1 : 0);
+    }
+    a = b;
+    d = x.createImageData(W, H);
+    for (k = 0; k < W * H; k++) {
+      v = a[k]; p = k * 4;
+      d.data[p] = v ? 90 : 6;
+      d.data[p + 1] = v ? 230 : 14;
+      d.data[p + 2] = v ? 150 : 22;
+      d.data[p + 3] = 255;
+    }
+    x.putImageData(d, 0, 0);
+  }
+  setInterval(step, 90);
+</script>

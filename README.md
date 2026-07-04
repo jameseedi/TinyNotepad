@@ -137,3 +137,31 @@ is still the honest next step.
   boxes (classic EDIT behaviour, same as pre-2018 real Notepad).
 - No dirty-buffer prompt on close, no Save As, no encoding handling (ANSI).
 - Save feedback is silent (the write just happens).
+
+---
+
+## Also in this repo — self-referential coding challenges
+
+Two artifacts in [`challenges/`](challenges), in the same "make the file
+system do something impossible-looking" spirit as the tiny exes:
+
+### [`challenges/polyglot/`](challenges/polyglot) — a PNG that is a ZIP that is an HTML page, and renders itself
+
+`triptych.png` is one byte stream that is simultaneously a valid **PNG**, a
+valid **ZIP**, and a valid **HTML** page. Open the HTML facet and the page
+is decoded from the PNG's *own pixels*: a bootstrap loads the file into an
+`<img>`, reads the pixels off a `<canvas>`, reconstructs the renderer
+JavaScript stored in those RGB bytes, and runs it. **pixels → code → page.**
+PNG-from-front, ZIP-from-back, HTML-ignores-the-binary — three parsers, one
+file. Verified: PNG decodes, ZIP CRCs pass, and Chromium runs the
+self-decode.
+
+### [`challenges/qr/`](challenges/qr) — a QR code that is a running program
+
+`program.qr.png` encodes a complete Conway's Game of Life as a
+`data:text/html` URL. Scan it with a phone and it doesn't open a site — it
+**runs**: a live, full-screen simulation, tap to reseed, no network.
+692 bytes of program in a version-18 QR. Verified: `zbar` decodes it and
+Chromium runs the result (~1950 live cells, evolving).
+
+Each challenge folder has its own README, a builder script, and a verifier.
