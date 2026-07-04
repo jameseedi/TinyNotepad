@@ -1,0 +1,19 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install FASM
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fasm
+      - name: Assemble and enforce size budget
+        run: sh build.sh
+      - name: Check committed binary matches source
+        run: git diff --exit-code tinypad.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tinypad
+          path: tinypad.exe
