@@ -14,10 +14,14 @@ program, carried inside the QR, that runs on **any** phone.
 
 ## `fragment.qr.png` — a real program, in the QR, on any phone
 
-![the program, run from the fragment QR](fragment.preview.png)
+<p>
+  <img src="fragment.qr.png" alt="scan to run the Game of Life on any phone" width="300">
+  <img src="fragment.preview.png" alt="the program running after the scan" width="300">
+</p>
 
-The program (a Conway's Game of Life) travels **inside this QR**, and it runs
-on any phone. The trick is to stop fighting the browser and borrow a plain,
+**Scan the left code** (or open [`fragment.url.txt`](fragment.url.txt)); the
+right image is what you get. The program (a Conway's Game of Life) travels
+**inside this QR**, and it runs on any phone. The trick is to stop fighting the browser and borrow a plain,
 permanent web standard: **the URL fragment.**
 
 ```
@@ -45,6 +49,8 @@ browser. It works on desktop and mobile, Chrome and Safari alike.
 
 ## `life.qr.png` — the whole program, no server at all
 
+<img src="life.qr.png" alt="Game of Life as a data: URL — scan in desktop Firefox" width="300">
+
 The purist version: the program is a `data:text/html,...` URL, so there is
 **no network dependency whatsoever** — but modern *mobile* browsers block
 top-level navigation to `data:` URLs (`about:blank#blocked`), so it only runs
@@ -53,6 +59,8 @@ opening [`life.html`](life.html) directly. This is the trade the fragment QR
 buys its way out of.
 
 ## `program.qr.png` — the reliable non-program
+
+<img src="program.qr.png" alt="vCard — scan to add a contact" width="300">
 
 A **vCard**. Not a program, but the one payload every phone acts on with zero
 caveats: scan it and it offers to create a contact for tinypad.exe. Kept as
