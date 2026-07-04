@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>fragment runner</title>
+<body>
+<script>
+/* Generic fragment runner — the whole point of the third QR.
+
+   The program you scanned does NOT live on this server. It rides in this
+   URL's #fragment, and by the URL spec the fragment is never transmitted to
+   the server — it stays entirely on your device. This page's only job is to
+   read that fragment and turn it back into the document, so the QR you
+   scanned *becomes* the program.
+
+   Why this dodges the block that stopped the data: URL version: navigation
+   here is ordinary https, which phones allow. The mobile ban is specifically
+   on top-level navigation to data: URLs; we never use one. So a real program,
+   carried inside the QR, runs on any phone — the only cost is that this ~30
+   lines of stub has to be reachable over https (served from this repo via
+   raw.githack). Write it once; any program rides the fragment forever after.
+
+   See challenges/qr/README.md. */
+(function () {
+  var payload = location.hash.slice(1);
+  if (!payload) {
+    document.body.textContent =
+      "Generic fragment runner. Append #<url-encoded-html> to run a program " +
+      "— the fragment stays on your device and becomes the page.";
+    return;
+  }
+  var html = decodeURIComponent(payload);
+  document.open();
+  document.write(html);
+  document.close();
+})();
+</script>
+</body>
