@@ -22,12 +22,23 @@ tinypad.exe [file]
 ## Build
 
 ```
-sh build.sh        # fasm tinypad.asm tinypad.exe + size gate
+sh build.sh        # assembles both editors + size gates
 ```
 
 Requires [FASM](https://flatassembler.net/) (`apt install fasm`). CI builds
-every push, fails if the binary hits 2048 bytes, and verifies the committed
-`tinypad.exe` matches the source.
+every push, fails if a binary hits its budget (2048 / 768 bytes), and
+verifies the committed binaries match the source.
+
+## The variant: micropad.exe — 617 bytes
+
+`micropad.asm` is the size-floor build, answering "how small does a usable
+editor go?". Same PE construction and top-level-EDIT trick, but save is the
+spec's cheapest candidate in its pure form: **Ctrl+S always dumps to
+`tinypad.txt`** in the current directory. Dropped relative to tinypad:
+load-on-launch, argv[1] handling, the Fixedsys font fix (removes gdi32 and
+`SendMessageA` entirely) and the 64K limit raise (default ~30K cap
+applies). Nine imports across two DLLs. Verified under Wine the same way:
+type → Ctrl+S → `tinypad.txt` contains the text, Alt+F4 exits cleanly.
 
 ## Where the bytes go
 
@@ -97,9 +108,9 @@ consumed later as `CloseHandle`'s argument.
 - *Load-on-launch from argv[1]?* Yes — cost ~90 bytes, in budget.
 - *UI chrome?* Standard overlapped-window frame. Quirk: a top-level EDIT's
   "window text" is its buffer, so the caption lazily mirrors what you type.
-- *Is <1 KB the flex target?* Achieved **with** save and load. A sub-768-byte
-  build is reachable by dropping gdi32 (font), `EM_SETLIMITTEXT`, and
-  load-on-launch.
+- *Is <1 KB the flex target?* Achieved **with** save and load. And the
+  sub-768 conjecture is no longer a conjecture — see `micropad.exe`,
+  617 bytes.
 
 ## Verified behaviour
 

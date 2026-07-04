@@ -1,10 +1,18 @@
 #!/bin/sh
-# Assemble tinypad.exe and enforce the size budget.
+# Assemble both editors and enforce their size budgets.
 set -e
+
+check() { # file budget
+    size=$(stat -c%s "$1" 2>/dev/null || stat -f%z "$1")
+    echo "$1: ${size} bytes (budget: $2)"
+    if [ "$size" -ge "$2" ]; then
+        echo "FAIL: $1 over budget" >&2
+        exit 1
+    fi
+}
+
 fasm tinypad.asm tinypad.exe
-size=$(stat -c%s tinypad.exe 2>/dev/null || stat -f%z tinypad.exe)
-echo "tinypad.exe: ${size} bytes (budget: 2048)"
-if [ "$size" -ge 2048 ]; then
-    echo "FAIL: over the 2 KiB budget" >&2
-    exit 1
-fi
+check tinypad.exe 2048
+
+fasm micropad.asm micropad.exe
+check micropad.exe 768
