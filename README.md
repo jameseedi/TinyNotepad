@@ -156,14 +156,15 @@ PNG-from-front, ZIP-from-back, HTML-ignores-the-binary — three parsers, one
 file. Verified: PNG decodes, ZIP CRCs pass, and Chromium runs the
 self-decode.
 
-### [`challenges/qr/`](challenges/qr) — a QR the phone acts on offline
+### [`challenges/qr/`](challenges/qr) — two QRs, two takes
 
-`program.qr.png` is a **vCard**: scan it with any phone camera and it offers
-to create a fully populated contact — offline, no app, no browser. (The
-first cut encoded a whole Game of Life as a `data:text/html` URL, but modern
-browsers block top-level navigation to `data:` URLs — `about:blank#blocked`
-— so it can't run from a cold scan without a server. That program still
-lives in the folder as `life.html`, runnable directly; the README explains
-the trade-off.) Verified: `zbar` decodes it to the exact, well-formed vCard.
+Two codes side by side. **`program.qr.png`** is a **vCard**: scan it with any
+phone camera and it offers to create a fully populated contact — offline, no
+app, works everywhere. **`life.qr.png`** puts a whole program *inside* the
+QR — a Conway's Game of Life as a `data:text/html` URL that runs on scan
+*where `data:` URLs are permitted* (desktop Firefox, some scanner webviews;
+stock mobile Chrome blocks it with `about:blank#blocked`, which is why the
+vCard exists too). Verified: `zbar` decodes both exactly, and Chromium runs
+the Game of Life (~1900 live cells, evolving).
 
 Each challenge folder has its own README, a builder script, and a verifier.

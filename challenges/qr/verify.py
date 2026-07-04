@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Verify program.qr.png decodes to the exact vCard payload and that the
-vCard is well formed. This is the same read a phone's decoder performs;
-whether the phone then offers "Add Contact" is an OS behaviour we can't
-exercise headlessly, but the payload is the standard vCard 3.0 that every
-mobile camera recognises. Exit non-zero on failure."""
+"""Verify both QRs decode to exactly what their builders encoded — the same
+read a phone's decoder performs. program.qr.png must be the well-formed
+vCard; life.qr.png must be the byte-exact data: URL. Whether the phone then
+offers "Add Contact" (vCard) or runs the program (data: URL, browser-
+dependent) are behaviours we can't exercise headlessly. Exit non-zero on
+failure."""
 import os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -16,25 +17,32 @@ def check(name, cond, extra=""):
     print(("  ok  " if cond else " FAIL ") + name + ("  " + extra if extra else ""))
 
 
-# decode the QR exactly as a scanner would
-raw = subprocess.check_output(
-    ["zbarimg", "--quiet", "--raw", os.path.join(HERE, "program.qr.png")])
-decoded = raw.decode("utf-8")
+def scan(name):
+    return subprocess.check_output(
+        ["zbarimg", "--quiet", "--raw", os.path.join(HERE, name)]).decode("utf-8")
 
+
+# --- program.qr.png: the vCard --------------------------------------------
+decoded = scan("program.qr.png")
 payload = open(os.path.join(HERE, "program.payload.txt"), encoding="utf-8").read()
-
-# normalise line endings (zbar emits LF; the payload is CRLF per spec) and
-# ignore a trailing blank line
+# normalise line endings (zbar emits LF; the payload is CRLF per spec)
 norm = lambda s: s.replace("\r\n", "\n").rstrip("\n")
-check("QR decodes to the payload", norm(decoded) == norm(payload))
-
+check("vCard QR decodes to the payload", norm(decoded) == norm(payload))
 lines = norm(decoded).split("\n")
 check("starts BEGIN:VCARD", lines[0] == "BEGIN:VCARD")
 check("ends END:VCARD", lines[-1] == "END:VCARD")
 check("declares VERSION:3.0", "VERSION:3.0" in lines)
 for field in ("N:", "FN:", "EMAIL", "URL:", "NOTE:"):
-    check("has %s" % field, any(l.startswith(field) or field in l.split(":", 1)[0]
-                                for l in lines))
+    check("vCard has %s" % field, any(l.split(":", 1)[0].startswith(field.rstrip(":"))
+                                      for l in lines))
+print("vCard: %d bytes, %d fields" % (len(payload), len(lines)))
 
-print("payload: %d bytes, %d fields" % (len(payload), len(lines)))
+# --- life.qr.png: the data: URL program -----------------------------------
+life = scan("life.qr.png")
+life_url = open(os.path.join(HERE, "life.url.txt"), encoding="utf-8").read()
+check("life QR round-trips byte-for-byte", life.rstrip("\n") == life_url.rstrip("\n"))
+check("life payload is a data:text/html program",
+      life_url.startswith("data:text/html,") and "<script>" in life_url,
+      "%d bytes" % len(life_url))
+
 sys.exit(0 if ok else 1)
