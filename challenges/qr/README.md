@@ -1,58 +1,78 @@
-# program.qr.png — a QR code that *is* a program
+# program.qr.png — a QR the phone actually acts on
 
-Scan this QR with a phone and it doesn't open a website — it **runs a
-program**: Conway's Game of Life, evolving live and full-screen, tap to
-reseed. No network, nothing installed. The whole app is encoded in the code.
+Point a phone camera at this QR and it *does something*, offline, with no app
+to install: it offers to **create a fully populated contact** — name, org,
+title, email, url, and a note explaining itself. It's a vCard, the structured
+payload every phone (iOS Camera, Android, Google Lens) recognises and acts on.
 
-![the QR](program.qr.png) ![it running, decoded and launched](preview.png)
+![the QR](program.qr.png)
 
-## How it works
+Scan it and your phone pops "Add Contact" for **tinypad.exe / TinyNotepad**.
 
-The QR encodes a `data:text/html,...` URL whose body is a minified,
-self-contained Game of Life (`life.html`). A QR scanner that opens data URLs
-hands it to the browser, which decodes and runs it on the spot. 692 bytes of
-program → a version-18 (89×89) QR at error-correction level L.
+## Why not "a program in the QR"?
+
+The first cut of this challenge encoded a whole program — a Conway's Game of
+Life — as a `data:text/html,...` URL. It decodes perfectly (you can still see
+it run: [`life.html`](life.html)), but it **does not run when scanned on a
+phone**, and that's not fixable in the payload:
+
+> Modern browsers block *top-level navigation* to `data:` URLs as an
+> anti-phishing measure (Chrome 60+, and every mobile browser). A QR scan
+> that opens the URL hits exactly that block — you get `about:blank#blocked`.
+
+There is no server here to host the page, so there's no first-party origin a
+`data:` document could be opened from. Running arbitrary code straight off a
+phone scan, offline, is precisely what browsers refuse to do. So the QR that
+*ships* is one the phone reliably acts on — a vCard — and the program stays in
+the folder as a file you can run directly or host.
+
+`life.html` still works: open it in any browser (or serve it) to watch the
+Game of Life. It's a genuine self-contained program; it just can't be launched
+from a cold scan.
+
+## The payload
+
+A standard vCard 3.0 (CRLF line endings, as the spec wants):
 
 ```
-data:text/html,<canvas id=c></canvas><style>…</style><script>…Game of Life…</script>
+BEGIN:VCARD
+VERSION:3.0
+N:exe;tinypad;;;
+FN:tinypad.exe
+ORG:TinyNotepad
+TITLE:A usable Win32 notepad in 921 bytes
+EMAIL;TYPE=INTERNET:hello@example.com
+URL:https://github.com/jameseedi/tinynotepad
+NOTE:You created this contact by pointing a camera at a QR code — …
+END:VCARD
 ```
 
-The program uses `%` for its toroidal wraparound (modulo), and `%` is
-structural in a URL, so the builder encodes it as `%25`; the browser decodes
-it back to `%` before running. That's the only transformation — everything
-else is verbatim, which keeps the QR small.
-
-## Try it
-
-- **Scan it** with a phone. Android camera / Google Lens and most scanner
-  apps open data URLs directly. **iOS Camera blocks `data:` URLs** — use a
-  scanner app that shows the decoded text, or just open `life.html` in a
-  browser to see the same program.
-- Display or print the QR reasonably large (it's version 18; give it screen
-  space and hold steady). The image is rendered at 8 px/module with a quiet
-  zone so it scans off a monitor.
+337 bytes → a version-14 (73×73) QR at error-correction level **M**, so it
+scans crisply off a screen or a modest print with margin to spare.
 
 ## Build & verify
 
 ```sh
-python3 build_qr.py                       # minify life.html -> data URL -> QR
-zbarimg --raw program.qr.png              # decode it back (proxy for a phone)
+python3 build_qr.py            # emit program.qr.png + program.payload.txt
+python3 verify.py              # decode with zbar, check it's a valid vCard
+zbarimg --raw program.qr.png   # see exactly what a scanner reads
 ```
 
-`program.url.txt` is the exact URL encoded, so you can diff it against what a
-scanner reads. Verified end-to-end with Playwright: the scanned URL was
-decoded with `zbar`, opened in Chromium, and the simulation ran (~1950 live
-cells, evolving frame to frame, no errors) — that's the `preview.png` above.
+`verify.py` decodes the QR the same way a phone's scanner does and confirms
+it's the exact, well-formed vCard. Requires `qrcode` (`pip install qrcode`),
+Pillow, and `zbar-tools`.
 
-Requires `qrcode` (`pip install qrcode`), `zbar-tools` for `zbarimg`, and
-Pillow.
+Whether the phone then shows "Add Contact" is OS behaviour we can't drive
+headlessly — but a vCard is the canonical contact payload, recognised by the
+stock camera on both major platforms. The email is a placeholder
+(`example.com`) and the URL is this repo.
 
 ## Files
 
 | file | what it is |
 |---|---|
-| `life.html` | the readable program (what gets minified) |
-| `build_qr.py` | minifies it, builds the data URL, renders the QR |
 | `program.qr.png` | the scannable QR — the deliverable |
-| `program.url.txt` | the exact URL the QR encodes |
-| `preview.png` | the program running, launched from the scanned QR |
+| `program.payload.txt` | the exact vCard the QR encodes |
+| `build_qr.py` | builds the vCard and renders the QR |
+| `verify.py` | decodes + validates it |
+| `life.html` | the original Game of Life — still runs, just not from a scan |

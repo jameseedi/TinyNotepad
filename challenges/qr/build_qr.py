@@ -1,62 +1,58 @@
 #!/usr/bin/env python3
-"""Turn life.html into a scannable QR code that *is* the program.
+"""Build program.qr.png: a QR the plain phone camera reliably *acts on*,
+offline, with no browser and no taps into a blocked page.
 
-The QR encodes a `data:text/html,...` URL containing a minified, fully
-self-contained Conway's Game of Life. A phone QR scanner that opens data
-URLs (most Android scanners, Google Lens) launches it straight into the
-browser: a live simulation, no network, nothing installed. We keep the
-payload small so the QR stays a low version and scans reliably off a screen
-or print.
+Earlier this challenge encoded a whole program as a `data:text/html` URL.
+That decodes fine, but every modern mobile browser blocks *top-level
+navigation* to `data:` URLs for security (you get `about:blank#blocked`),
+so scanning it never runs the program on a stock phone. See README.md.
 
-Outputs program.qr.png and prints the exact URL it encoded so it can be
-round-trip decoded (see verify with zbarimg / the README)."""
-import re, os, qrcode
+So the QR now carries a **vCard** — the structured payload phones treat as
+an action. Scan it with the built-in camera (iOS Camera, Android, Google
+Lens all recognise vCards) and the phone offers to create a fully populated
+contact: name, org, title, email, url, and a note. Non-trivial, offline,
+and it works on any phone with no app to install.
+
+The program that used to live in the QR still lives in this folder as
+life.html — open it in a browser (or host it) to run the Game of Life."""
+import os, qrcode
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-
-def minify(html):
-    # strip HTML comments, then collapse all whitespace and drop every space
-    # that isn't between two word characters. That removes the optional spaces
-    # around JS/CSS punctuation (`= seed` -> `=seed`, `n == 3` -> `n==3`) while
-    # preserving the mandatory ones (`function step`, `50 100`), so the source
-    # stays readable but the payload — and the QR version — shrink hard.
-    html = re.sub(r"<!--.*?-->", "", html, flags=re.S)
-    html = re.sub(r"\s+", " ", html).strip()
-    html = re.sub(r"\s+(?=\W)", "", html)   # space before punctuation
-    html = re.sub(r"(?<=\W)\s+", "", html)   # space after punctuation
-    return html
+# vCard 3.0. Spec line ending is CRLF; parsers on phones expect it.
+VCARD = "\r\n".join([
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    "N:exe;tinypad;;;",
+    "FN:tinypad.exe",
+    "ORG:TinyNotepad",
+    "TITLE:A usable Win32 notepad in 921 bytes",
+    "EMAIL;TYPE=INTERNET:hello@example.com",
+    "URL:https://github.com/jameseedi/tinynotepad",
+    "NOTE:You created this contact by pointing a camera at a QR code — "
+    "proof a QR can do something non-trivial, offline, on any phone.",
+    "END:VCARD",
+    "",
+])
 
 
 def main():
-    src = open(os.path.join(HERE, "life.html"), encoding="utf-8").read()
-    program = minify(src)
-    # data URL. In the data body only '%' (percent-encoding intro) and '#'
-    # (fragment) are structural, so encode just those two — the browser
-    # decodes them back before running the program (the JS uses '%' for its
-    # toroidal wraparound modulo). Everything else browsers accept verbatim,
-    # which keeps the payload short and the QR a low, scannable version.
-    body = program.replace("%", "%25").replace("#", "%23")
-    url = "data:text/html," + body
-
     qr = qrcode.QRCode(
-        error_correction=qrcode.constants.ERROR_CORRECT_L,  # max capacity
+        error_correction=qrcode.constants.ERROR_CORRECT_M,  # M: sturdier scan
         box_size=8, border=4,
     )
-    qr.add_data(url)
+    qr.add_data(VCARD)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    out = os.path.join(HERE, "program.qr.png")
-    img.save(out)
+    qr.make_image(fill_color="black", back_color="white").save(
+        os.path.join(HERE, "program.qr.png"))
 
-    # record the exact payload for round-trip verification / manual use
-    with open(os.path.join(HERE, "program.url.txt"), "w") as f:
-        f.write(url)
+    with open(os.path.join(HERE, "program.payload.txt"), "w", newline="") as f:
+        f.write(VCARD)
 
-    print("program bytes: %d" % len(program))
-    print("URL bytes:     %d" % len(url))
-    print("QR version:    %d (%dx%d modules)" % (qr.version, qr.modules_count, qr.modules_count))
-    print("wrote %s" % os.path.basename(out))
+    print("payload bytes: %d" % len(VCARD))
+    print("QR version:    %d (%dx%d modules, ECC level M)"
+          % (qr.version, qr.modules_count, qr.modules_count))
+    print("wrote program.qr.png")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,10 @@
+BEGIN:VCARD
+VERSION:3.0
+N:exe;tinypad;;;
+FN:tinypad.exe
+ORG:TinyNotepad
+TITLE:A usable Win32 notepad in 921 bytes
+EMAIL;TYPE=INTERNET:hello@example.com
+URL:https://github.com/jameseedi/tinynotepad
+NOTE:You created this contact by pointing a camera at a QR code — proof a QR can do something non-trivial, offline, on any phone.
+END:VCARD
